@@ -28,8 +28,9 @@ func TestListLikedYou(t *testing.T) {
 			UnixTimestamp: 0,
 		},
 	}
+	token := hex.EncodeToString([]byte("3"))
 	mockStore := mocks.NewStore(t)
-	mockStore.On("GetAllLiked", context.TODO(), 2).Return(GetAllLikedResponse, nil).Once()
+	mockStore.On("GetAllLiked", context.TODO(), 2, 0).Return(GetAllLikedResponse, 3, nil).Once()
 
 	// When.
 	newExploreServerImpl := New(mockStore)
@@ -40,6 +41,8 @@ func TestListLikedYou(t *testing.T) {
 	assert.Len(t, res.Likers, 2)
 	assert.Contains(t, res.Likers, GetAllLikedResponse[0])
 	assert.Contains(t, res.Likers, GetAllLikedResponse[1])
+
+	assert.Equal(t, res.NextPaginationToken, &token)
 }
 
 func TestHexEncodeDecode(t *testing.T) {

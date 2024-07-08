@@ -58,6 +58,9 @@ func (es *ExploreServerImpl) ListLikedYou(rctx context.Context, in *explore.List
 }
 
 // List all users who liked the recipient excluding those who have been liked in return.
+// Page size is currently set to 1 to demonstrate the pagination functionality with
+// the current small amount of test data in the database.
+// The page size can be increased in the file pkg/store/mysql/mysql_queries.go
 func (es *ExploreServerImpl) ListNewLikedYou(rctx context.Context, in *explore.ListLikedYouRequest) (*explore.ListLikedYouResponse, error) {
 	id, err := strconv.Atoi(in.GetRecipientUserId())
 	if err != nil {
