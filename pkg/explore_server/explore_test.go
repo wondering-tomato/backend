@@ -4,6 +4,8 @@ import (
 	"backend/explore"
 	"backend/mocks"
 	"context"
+	"encoding/hex"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +30,7 @@ func TestListLikedYou(t *testing.T) {
 	}
 	mockStore := mocks.NewStore(t)
 	mockStore.On("GetAllLiked", context.TODO(), 2).Return(GetAllLikedResponse, nil).Once()
+
 	// When.
 	newExploreServerImpl := New(mockStore)
 	res, err := newExploreServerImpl.ListLikedYou(context.TODO(), ListLikedYouResponse)
@@ -37,4 +40,20 @@ func TestListLikedYou(t *testing.T) {
 	assert.Len(t, res.Likers, 2)
 	assert.Contains(t, res.Likers, GetAllLikedResponse[0])
 	assert.Contains(t, res.Likers, GetAllLikedResponse[1])
+}
+
+func TestHexEncodeDecode(t *testing.T) {
+	// Given.
+	hasMorePages := 7
+	intHasMorePages := strconv.Itoa(hasMorePages)
+
+	// When.
+	encodedIntHasMorePages := hex.EncodeToString([]byte(intHasMorePages))
+	decodedIntHasMorePages, err := hex.DecodeString(encodedIntHasMorePages)
+	require.NoError(t, err)
+
+	// Then.
+	decodedHasMorePages, err := strconv.Atoi(string(decodedIntHasMorePages))
+	require.NoError(t, err)
+	assert.Equal(t, hasMorePages, decodedHasMorePages)
 }

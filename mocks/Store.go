@@ -42,34 +42,41 @@ func (_m *Store) CountLikedYou(ctx context.Context, id int) (uint64, error) {
 	return r0, r1
 }
 
-// GetAllLiked provides a mock function with given fields: ctx, id
-func (_m *Store) GetAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error) {
-	ret := _m.Called(ctx, id)
+// GetAllLiked provides a mock function with given fields: ctx, id, lastId
+func (_m *Store) GetAllLiked(ctx context.Context, id int, lastId int) ([]*explore.ListLikedYouResponse_Liker, int, error) {
+	ret := _m.Called(ctx, id, lastId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAllLiked")
 	}
 
 	var r0 []*explore.ListLikedYouResponse_Liker
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int) ([]*explore.ListLikedYouResponse_Liker, error)); ok {
-		return rf(ctx, id)
+	var r1 int
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) ([]*explore.ListLikedYouResponse_Liker, int, error)); ok {
+		return rf(ctx, id, lastId)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int) []*explore.ListLikedYouResponse_Liker); ok {
-		r0 = rf(ctx, id)
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) []*explore.ListLikedYouResponse_Liker); ok {
+		r0 = rf(ctx, id, lastId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*explore.ListLikedYouResponse_Liker)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
-		r1 = rf(ctx, id)
+	if rf, ok := ret.Get(1).(func(context.Context, int, int) int); ok {
+		r1 = rf(ctx, id, lastId)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(int)
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func(context.Context, int, int) error); ok {
+		r2 = rf(ctx, id, lastId)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // GetNewAllLiked provides a mock function with given fields: ctx, id

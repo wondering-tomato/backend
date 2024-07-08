@@ -8,7 +8,7 @@ import (
 )
 
 type Store interface {
-	GetAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error)
+	GetAllLiked(ctx context.Context, id int, lastId int) ([]*explore.ListLikedYouResponse_Liker, int, error)
 	GetNewAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error)
 	CountLikedYou(ctx context.Context, id int) (uint64, error)
 	PutDecision(ctx context.Context, actorId int, recipientId int, liked int) (bool, error)
@@ -33,8 +33,8 @@ var _ Store = &StoreImpl{}
 var _ Store = &mysql.StoreMySQLImpl{}
 var _ Store = &noop.StoreNoopImpl{}
 
-func (s *StoreImpl) GetAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error) {
-	return nil, nil
+func (s *StoreImpl) GetAllLiked(ctx context.Context, id int, lastId int) ([]*explore.ListLikedYouResponse_Liker, int, error) {
+	return nil, 0, nil
 }
 func (s *StoreImpl) GetNewAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error) {
 	return nil, nil

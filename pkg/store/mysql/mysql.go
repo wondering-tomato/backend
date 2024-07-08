@@ -33,7 +33,6 @@ func connect() (*sql.DB, error) {
 	// Get a database handle.
 	db, err := sql.Open("mysql", fmt.Sprintf("root:example@tcp(db:%d)/explore", port))
 	// db, err := sql.Open("mysql", fmt.Sprintf("root:example@tcp(0.0.0.0:%d)/explore", port))
-	// db, err := sql.Open("mysql", fmt.Sprintf("root:example@tcp(db:%d)/explore", port))
 	if err != nil {
 		log.Println(err)
 		return nil, err

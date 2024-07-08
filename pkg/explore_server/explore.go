@@ -4,6 +4,7 @@ import (
 	"backend/explore"
 	"backend/pkg/store"
 	"context"
+	"encoding/hex"
 	"strconv"
 )
 
@@ -28,13 +29,32 @@ func (es *ExploreServerImpl) ListLikedYou(rctx context.Context, in *explore.List
 	if err != nil {
 		return nil, err
 	}
-	actorIDs, err := es.Store.GetAllLiked(rctx, id)
+
+	previousToken := in.GetPaginationToken()
+	var lastId int
+	if previousToken != "" {
+		decodedToken, err := hex.DecodeString(previousToken)
+		if err != nil {
+			return nil, err
+		}
+		lastId, err = strconv.Atoi(string(decodedToken))
+		if err != nil {
+			return nil, err
+		}
+	}
+	actorIDs, hasMorePages, err := es.Store.GetAllLiked(rctx, id, lastId)
 	if err != nil {
 		return nil, err
 	}
+
+	var token string
+	if hasMorePages > 0 {
+		intHasMorePages := strconv.Itoa(hasMorePages)
+		token = hex.EncodeToString([]byte(intHasMorePages))
+	}
 	return &explore.ListLikedYouResponse{
 		Likers:              actorIDs,
-		NextPaginationToken: new(string),
+		NextPaginationToken: &token,
 	}, nil
 }
 

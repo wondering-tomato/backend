@@ -12,8 +12,8 @@ type StoreNoopImpl struct {
 
 var _ StoreNoop = &StoreNoopImpl{}
 
-func (s *StoreNoopImpl) GetAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error) {
-	return nil, nil
+func (s *StoreNoopImpl) GetAllLiked(ctx context.Context, id int, lastId int) ([]*explore.ListLikedYouResponse_Liker, int, error) {
+	return nil, 0, nil
 }
 func (s *StoreNoopImpl) GetNewAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error) {
 	return nil, nil
