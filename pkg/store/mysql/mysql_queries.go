@@ -53,51 +53,45 @@ func (s *StoreMySQLImpl) GetAllLiked(ctx context.Context, id int, lastId int) ([
 	return result, 0, nil
 }
 
-func (s *StoreMySQLImpl) GetNewAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error) {
-	// Query for the actors that were liked by the recipient.
-	rows, err := s.db.QueryContext(ctx, "SELECT ActorID FROM decisions WHERE RecipientID=? AND Liked=1", id)
-	if err != nil {
-		return nil, err
+func (s *StoreMySQLImpl) GetNewAllLiked(ctx context.Context, id int, lastId int) ([]*explore.ListLikedYouResponse_Liker, int, error) {
+	var rows *sql.Rows
+	var err error
+	if lastId > 0 {
+		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 AND ActorID NOT IN (SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1) AND ID < ? ORDER BY ID desc LIMIT ?;", id, id, lastId, pageSize)
+		if err != nil {
+			return nil, 0, err
+		}
+
+	} else {
+		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 AND ActorID NOT IN (SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1) ORDER BY ID desc LIMIT ?;", id, id, pageSize)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 	defer rows.Close()
-
-	// Track the seen likers.
-	likers := make(map[*explore.ListLikedYouResponse_Liker]bool)
 
 	// Loop through rows, using Scan to assign column data to struct fields.
-	for rows.Next() {
-		var actorId explore.ListLikedYouResponse_Liker
-		if err := rows.Scan(&actorId.ActorId); err != nil {
-			return nil, err
-		}
-		likers[&actorId] = true
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	// Query for the recipients that were liked by the actor.
-	rows, err = s.db.QueryContext(ctx, "SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1", id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var result []*explore.ListLikedYouResponse_Liker
+	minID := math.MaxInt32
 	for rows.Next() {
-		var recipientID explore.ListLikedYouResponse_Liker
-		if err := rows.Scan(&recipientID.ActorId); err != nil {
-			return nil, err
+		var id int
+		var actorId explore.ListLikedYouResponse_Liker
+		if err := rows.Scan(&id, &actorId.ActorId); err != nil {
+			return nil, 0, err
 		}
-		if _, ok := likers[&recipientID]; !ok {
-			result = append(result, &recipientID)
-			likers[&recipientID] = true
-		}
+		minID = id
+		result = append(result, &actorId)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return result, nil
+
+	// If there are more rows, return the last seen ID for the pagination response.
+	if minID != math.MaxInt32 {
+		return result, minID, nil
+	}
+	// If we've reached the end of the result, return the remainder of results and the id of 0.
+	return result, 0, nil
 }
 
 func (s *StoreMySQLImpl) CountLikedYou(ctx context.Context, id int) (uint64, error) {
@@ -145,14 +139,14 @@ func (s *StoreMySQLImpl) PutDecision(ctx context.Context, actorId int, recipient
 		}
 	}
 
-	// Check if already exists by counting the number of skips between actor and recipient.
+	// Check if already exists by counting the number of likes between actor and recipient.
 	// Decision to like.
-	skips, err = countDecisions(tx, actorId, recipientId, 1)
+	likes, err := countDecisions(tx, actorId, recipientId, 1)
 	if err != nil {
 		return false, err
 	}
-	// If skips exist, remove them.
-	if skips > 0 {
+	// If likes exist, remove them.
+	if likes > 0 {
 		if err = deleteDecision(tx, ctx, actorId, recipientId, 1); err != nil {
 			if rollbackErr := tx.Rollback(); rollbackErr != nil {
 				log.Fatalf("update drivers: unable to rollback: %v", rollbackErr)
@@ -175,6 +169,9 @@ func (s *StoreMySQLImpl) PutDecision(ctx context.Context, actorId int, recipient
 	if rows != 1 {
 		return false, fmt.Errorf("row != 1: %d", rows)
 	}
+	if err := tx.Commit(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Exit early if the actor's decision is not to like the recipient.
 	if liked == 0 {
@@ -189,9 +186,6 @@ func (s *StoreMySQLImpl) PutDecision(ctx context.Context, actorId int, recipient
 	bCount, err := countDecisions(tx, recipientId, actorId, 1)
 	if err != nil {
 		return false, err
-	}
-	if err := tx.Commit(); err != nil {
-		log.Fatal(err)
 	}
 	return aCount > 0 && bCount > 0, nil
 }

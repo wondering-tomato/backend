@@ -55,23 +55,37 @@ func main() {
 	log.Printf("Full ListLikedYou: %s", res)
 
 	// ##
-	// Make a call to ListNewLikedYou.
+	// Make a paginated call to ListNewLikedYou.
+	// Append the results to res and then log res.
 	// ##
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	r, err := c.ListNewLikedYou(ctx, &explore.ListLikedYouRequest{
-		RecipientUserId: "2",
-		PaginationToken: new(string),
-	})
-	if err != nil {
-		log.Fatalf("Error ListNewLikedYou: %v", err)
+
+	res = []*explore.ListLikedYouResponse_Liker{}
+	pageToken = ""
+	for {
+		r, err := c.ListNewLikedYou(ctx, &explore.ListLikedYouRequest{
+			RecipientUserId: "2",
+			PaginationToken: &pageToken,
+		})
+		if err != nil {
+			log.Fatalf("Error ListNewLikedYou: %v", err)
+		}
+		log.Printf("ListNewLikedYou: %s", r.GetLikers())
+		res = append(res, r.GetLikers()...)
+
+		pageToken = r.GetNextPaginationToken()
+		if pageToken == "" {
+			break
+		}
+		log.Printf("next page token: %s", pageToken)
 	}
-	log.Printf("ListNewLikedYou: %s", r.GetLikers())
+	log.Printf("Full ListNewLikedYou: %s", res)
 
 	// ##
 	// Make a call to CountLikedYou.
 	// ##
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	aa, err := c.CountLikedYou(ctx, &explore.CountLikedYouRequest{
 		RecipientUserId: "2",
@@ -84,7 +98,7 @@ func main() {
 	// ##
 	// Make a call to PutDecision.
 	// ##
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	rrr, err := c.PutDecision(ctx, &explore.PutDecisionRequest{
 		ActorUserId:     "4",

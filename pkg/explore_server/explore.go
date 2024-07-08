@@ -63,13 +63,28 @@ func (es *ExploreServerImpl) ListNewLikedYou(rctx context.Context, in *explore.L
 	if err != nil {
 		return nil, err
 	}
-	actorIDs, err := es.Store.GetNewAllLiked(rctx, id)
+
+	previousToken := in.GetPaginationToken()
+	var lastId int
+	if previousToken != "" {
+		lastId, err = decodeToken(previousToken)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	actorIDs, hasMorePages, err := es.Store.GetNewAllLiked(rctx, id, lastId)
 	if err != nil {
 		return nil, err
 	}
+	var token string
+	if hasMorePages > 0 {
+		intHasMorePages := strconv.Itoa(hasMorePages)
+		token = hex.EncodeToString([]byte(intHasMorePages))
+	}
 	return &explore.ListLikedYouResponse{
 		Likers:              actorIDs,
-		NextPaginationToken: new(string),
+		NextPaginationToken: &token,
 	}, nil
 }
 
