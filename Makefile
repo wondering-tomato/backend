@@ -13,6 +13,9 @@ stop:
 exec:
 	docker exec -it db bash
 
+run-local-client:
+	go run client/client.go
+
 # Restart the current DB and then exec into the DB container.
 db-restart: stop start wait exec
 
@@ -22,9 +25,8 @@ wait:
 	$(foreach var,$(durations),sleep 1;)
 
 ## Tests
-generate-mocks:
-	mockery --all
-
 test:
 	docker-compose run --no-deps --rm server bash -c "cd /go/src && go test --race ./..."
 	
+mock: # requires the installation of mockery on local system: "brew install mockery"
+	mockery --all
