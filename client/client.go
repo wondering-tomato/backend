@@ -25,7 +25,10 @@ func main() {
 	defer conn.Close()
 	c := explore.NewExploreServiceClient(conn)
 
-	// Contact the server and print out its response.
+	// ##
+	// Make a paginated call to ListLikedYou.
+	// Append the results to res and then log res.
+	// ##
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
@@ -51,7 +54,9 @@ func main() {
 	}
 	log.Printf("Full ListLikedYou: %s", res)
 
-	// Contact the server and print out its response.
+	// ##
+	// Make a call to ListNewLikedYou.
+	// ##
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := c.ListNewLikedYou(ctx, &explore.ListLikedYouRequest{
@@ -63,7 +68,9 @@ func main() {
 	}
 	log.Printf("ListNewLikedYou: %s", r.GetLikers())
 
-	// Contact the server and print out its response.
+	// ##
+	// Make a call to CountLikedYou.
+	// ##
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	aa, err := c.CountLikedYou(ctx, &explore.CountLikedYouRequest{
@@ -74,7 +81,9 @@ func main() {
 	}
 	log.Printf("CountLikedYou: %d", aa.GetCount())
 
-	// Contact the server and print out its response.
+	// ##
+	// Make a call to PutDecision.
+	// ##
 	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	rrr, err := c.PutDecision(ctx, &explore.PutDecisionRequest{
