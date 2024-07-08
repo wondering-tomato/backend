@@ -32,6 +32,8 @@ func New() *StoreMySQLImpl {
 func connect() (*sql.DB, error) {
 	// Get a database handle.
 	db, err := sql.Open("mysql", fmt.Sprintf("root:example@tcp(db:%d)/explore", port))
+
+	// ## Uncomment the line below to connect to the DB using a local host name.
 	// db, err := sql.Open("mysql", fmt.Sprintf("root:example@tcp(0.0.0.0:%d)/explore", port))
 	if err != nil {
 		log.Println(err)
