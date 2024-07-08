@@ -30,7 +30,7 @@ func main() {
 	defer cancel()
 
 	res := []*explore.ListLikedYouResponse_Liker{}
-	// Pagintation
+	// Pagination.
 	pageToken := ""
 	for {
 		r, err := c.ListLikedYou(ctx, &explore.ListLikedYouRequest{
