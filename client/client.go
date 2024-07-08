@@ -33,9 +33,9 @@ func main() {
 	defer cancel()
 
 	res := []*explore.ListLikedYouResponse_Liker{}
-	// Pagination.
 	pageToken := ""
 	for {
+		// Pagination.
 		r, err := c.ListLikedYou(ctx, &explore.ListLikedYouRequest{
 			RecipientUserId: "2",
 			PaginationToken: &pageToken,
@@ -89,7 +89,7 @@ func main() {
 	rrr, err := c.PutDecision(ctx, &explore.PutDecisionRequest{
 		ActorUserId:     "4",
 		RecipientUserId: "3",
-		LikedRecipient:  true,
+		LikedRecipient:  false,
 	})
 	if err != nil {
 		log.Fatalf("Error PutDecision: %v", err)

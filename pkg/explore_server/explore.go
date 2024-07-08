@@ -23,7 +23,10 @@ type ExploreServerImpl struct {
 	explore.UnimplementedExploreServiceServer
 }
 
-// List all users who liked the recipient
+// List all users who liked the recipient.
+// Page size is currently set to 1 to demonstrate the pagination functionality with
+// the current small amount of test data in the database.
+// The page size can be increased in the file pkg/store/mysql/mysql_queries.go
 func (es *ExploreServerImpl) ListLikedYou(rctx context.Context, in *explore.ListLikedYouRequest) (*explore.ListLikedYouResponse, error) {
 	id, err := strconv.Atoi(in.GetRecipientUserId())
 	if err != nil {
@@ -33,11 +36,7 @@ func (es *ExploreServerImpl) ListLikedYou(rctx context.Context, in *explore.List
 	previousToken := in.GetPaginationToken()
 	var lastId int
 	if previousToken != "" {
-		decodedToken, err := hex.DecodeString(previousToken)
-		if err != nil {
-			return nil, err
-		}
-		lastId, err = strconv.Atoi(string(decodedToken))
+		lastId, err = decodeToken(previousToken)
 		if err != nil {
 			return nil, err
 		}
@@ -58,31 +57,7 @@ func (es *ExploreServerImpl) ListLikedYou(rctx context.Context, in *explore.List
 	}, nil
 }
 
-// List all users who liked the recipient
-func (es *ExploreServerImpl) PutDecision(rctx context.Context, in *explore.PutDecisionRequest) (*explore.PutDecisionResponse, error) {
-	actorUserId, err := strconv.Atoi(in.ActorUserId)
-	if err != nil {
-		return nil, err
-	}
-	recipientUserId, err := strconv.Atoi(in.RecipientUserId)
-	if err != nil {
-		return nil, err
-	}
-	liked := 0
-	if in.LikedRecipient {
-		liked = 1
-	}
-
-	res, err := es.Store.PutDecision(rctx, actorUserId, recipientUserId, liked)
-	if err != nil {
-		return nil, err
-	}
-	return &explore.PutDecisionResponse{
-		MutualLikes: res,
-	}, nil
-}
-
-// List all users who liked the recipient excluding those who have been liked in return
+// List all users who liked the recipient excluding those who have been liked in return.
 func (es *ExploreServerImpl) ListNewLikedYou(rctx context.Context, in *explore.ListLikedYouRequest) (*explore.ListLikedYouResponse, error) {
 	id, err := strconv.Atoi(in.GetRecipientUserId())
 	if err != nil {
@@ -111,4 +86,41 @@ func (es *ExploreServerImpl) CountLikedYou(rctx context.Context, in *explore.Cou
 	return &explore.CountLikedYouResponse{
 		Count: count,
 	}, nil
+}
+
+// List all users who liked the recipient.
+func (es *ExploreServerImpl) PutDecision(rctx context.Context, in *explore.PutDecisionRequest) (*explore.PutDecisionResponse, error) {
+	actorUserId, err := strconv.Atoi(in.ActorUserId)
+	if err != nil {
+		return nil, err
+	}
+	recipientUserId, err := strconv.Atoi(in.RecipientUserId)
+	if err != nil {
+		return nil, err
+	}
+	liked := 0
+	if in.LikedRecipient {
+		liked = 1
+	}
+
+	res, err := es.Store.PutDecision(rctx, actorUserId, recipientUserId, liked)
+	if err != nil {
+		return nil, err
+	}
+	return &explore.PutDecisionResponse{
+		MutualLikes: res,
+	}, nil
+}
+
+// decodeToken decodes a hex encoded string into an int.
+func decodeToken(token string) (int, error) {
+	decodedToken, err := hex.DecodeString(token)
+	if err != nil {
+		return 0, err
+	}
+	lastId, err := strconv.Atoi(string(decodedToken))
+	if err != nil {
+		return 0, err
+	}
+	return lastId, nil
 }

@@ -11,6 +11,117 @@ import (
 
 var pageSize = 1
 
+// List all users who liked the recipient.
+func (s *StoreMySQLImpl) GetAllLiked(ctx context.Context, id int, lastId int) ([]*explore.ListLikedYouResponse_Liker, int, error) {
+	var rows *sql.Rows
+	var err error
+	if lastId > 0 {
+		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 AND ID < ? ORDER BY id desc LIMIT ?", id, lastId, pageSize)
+		if err != nil {
+			return nil, 0, err
+		}
+	} else {
+		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 ORDER BY id desc LIMIT ?", id, pageSize)
+		if err != nil {
+			return nil, 0, err
+		}
+
+	}
+	defer rows.Close()
+
+	// Loop through rows, using Scan to assign column data to struct fields.
+	var result []*explore.ListLikedYouResponse_Liker
+	minID := math.MaxInt32
+	for rows.Next() {
+		var id int
+		var actorId explore.ListLikedYouResponse_Liker
+		if err := rows.Scan(&id, &actorId.ActorId); err != nil {
+			return nil, 0, err
+		}
+		minID = id
+		result = append(result, &actorId)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	// If there are more rows, return the last seen ID for the pagination response.
+	if minID != math.MaxInt32 {
+		return result, minID, nil
+	}
+	// If we've reached the end of the result, return the remainder of results and the id of 0.
+	return result, 0, nil
+}
+
+func (s *StoreMySQLImpl) GetNewAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error) {
+	// Query for the actors that were liked by the recipient.
+	rows, err := s.db.QueryContext(ctx, "SELECT ActorID FROM decisions WHERE RecipientID=? AND Liked=1", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Track the seen likers.
+	likers := make(map[*explore.ListLikedYouResponse_Liker]bool)
+
+	// Loop through rows, using Scan to assign column data to struct fields.
+	for rows.Next() {
+		var actorId explore.ListLikedYouResponse_Liker
+		if err := rows.Scan(&actorId.ActorId); err != nil {
+			return nil, err
+		}
+		likers[&actorId] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Query for the recipients that were liked by the actor.
+	rows, err = s.db.QueryContext(ctx, "SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1", id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*explore.ListLikedYouResponse_Liker
+	for rows.Next() {
+		var recipientID explore.ListLikedYouResponse_Liker
+		if err := rows.Scan(&recipientID.ActorId); err != nil {
+			return nil, err
+		}
+		if _, ok := likers[&recipientID]; !ok {
+			result = append(result, &recipientID)
+			likers[&recipientID] = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *StoreMySQLImpl) CountLikedYou(ctx context.Context, id int) (uint64, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT ActorID FROM decisions WHERE RecipientID=? AND Liked=1", id)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	// Loop through rows, using Scan to assign column data to struct fields.
+	var rr []*explore.ListLikedYouResponse_Liker
+	for rows.Next() {
+		var actorId explore.ListLikedYouResponse_Liker
+		if err := rows.Scan(&actorId.ActorId); err != nil {
+			return 0, err
+		}
+		rr = append(rr, &actorId)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	return uint64(len(rr)), nil
+}
+
 func (s *StoreMySQLImpl) PutDecision(ctx context.Context, actorId int, recipientId int, liked int) (bool, error) {
 	// Start transaction.
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -83,112 +194,6 @@ func (s *StoreMySQLImpl) PutDecision(ctx context.Context, actorId int, recipient
 		log.Fatal(err)
 	}
 	return aCount > 0 && bCount > 0, nil
-}
-
-// List all users who liked the recipient.
-func (s *StoreMySQLImpl) GetAllLiked(ctx context.Context, id int, lastId int) ([]*explore.ListLikedYouResponse_Liker, int, error) {
-	var rows *sql.Rows
-	var err error
-	if lastId > 0 {
-		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 AND ID < ? ORDER BY id desc LIMIT ?", id, lastId, pageSize)
-		if err != nil {
-			return nil, 0, err
-		}
-	} else {
-		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 ORDER BY id desc LIMIT ?", id, pageSize)
-		if err != nil {
-			return nil, 0, err
-		}
-
-	}
-	defer rows.Close()
-
-	// Loop through rows, using Scan to assign column data to struct fields.
-	var rr []*explore.ListLikedYouResponse_Liker
-	minID := math.MaxInt32
-	for rows.Next() {
-		var id int
-		var actorId explore.ListLikedYouResponse_Liker
-		if err := rows.Scan(&id, &actorId.ActorId); err != nil {
-			return nil, 0, fmt.Errorf("actorId %d: %v", id, err)
-		}
-		minID = id
-		rr = append(rr, &actorId)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("actorId %d: %v", id, err)
-	}
-	if minID != math.MaxInt32 {
-		return rr, minID, nil
-	}
-	return rr, 0, nil
-}
-
-func (s *StoreMySQLImpl) GetNewAllLiked(ctx context.Context, id int) ([]*explore.ListLikedYouResponse_Liker, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT ActorID FROM decisions WHERE RecipientID=? AND Liked=1", id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	// Loop through rows, using Scan to assign column data to struct fields.
-	aa := make(map[*explore.ListLikedYouResponse_Liker]bool)
-
-	for rows.Next() {
-		var actorId explore.ListLikedYouResponse_Liker
-		if err := rows.Scan(&actorId.ActorId); err != nil {
-			return nil, fmt.Errorf("actorId %d: %v", id, err)
-		}
-		aa[&actorId] = true
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("actorId %d: %v", id, err)
-	}
-
-	//
-	rows, err = s.db.QueryContext(ctx, "SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1", id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var rr []*explore.ListLikedYouResponse_Liker
-	for rows.Next() {
-		var recipientID explore.ListLikedYouResponse_Liker
-		if err := rows.Scan(&recipientID.ActorId); err != nil {
-			return nil, fmt.Errorf("recipientID %d: %v", id, err)
-		}
-		if _, ok := aa[&recipientID]; !ok {
-			rr = append(rr, &recipientID)
-			aa[&recipientID] = true
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("actorId %d: %v", id, err)
-	}
-	return rr, nil
-}
-
-func (s *StoreMySQLImpl) CountLikedYou(ctx context.Context, id int) (uint64, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT ActorID FROM decisions WHERE RecipientID=? AND Liked=1", id)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	// Loop through rows, using Scan to assign column data to struct fields.
-	var rr []*explore.ListLikedYouResponse_Liker
-	for rows.Next() {
-		var actorId explore.ListLikedYouResponse_Liker
-		if err := rows.Scan(&actorId.ActorId); err != nil {
-			return 0, fmt.Errorf("actorId %d: %v", id, err)
-		}
-		rr = append(rr, &actorId)
-	}
-	if err := rows.Err(); err != nil {
-		return 0, fmt.Errorf("actorId %d: %v", id, err)
-	}
-	return uint64(len(rr)), nil
 }
 
 // Count the number of decisions where actor likes recipient with liked.
