@@ -106,7 +106,7 @@ func (es *ExploreServerImpl) CountLikedYou(rctx context.Context, in *explore.Cou
 	}, nil
 }
 
-// List all users who liked the recipient.
+// PutDecision adds a new decision between actor and recipient.
 func (es *ExploreServerImpl) PutDecision(rctx context.Context, in *explore.PutDecisionRequest) (*explore.PutDecisionResponse, error) {
 	actorUserId, err := strconv.Atoi(in.ActorUserId)
 	if err != nil {

@@ -178,10 +178,16 @@ func (s *StoreMySQLImpl) PutDecision(ctx context.Context, actorId int, recipient
 	// See if mutual - checking both actor liking recipient and vice-versa.
 	aCount, err := countDecisions(tx, actorId, recipientId, 1)
 	if err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			log.Fatalf("update drivers: unable to rollback: %v", rollbackErr)
+		}
 		return false, err
 	}
 	bCount, err := countDecisions(tx, recipientId, actorId, 1)
 	if err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			log.Fatalf("update drivers: unable to rollback: %v", rollbackErr)
+		}
 		return false, err
 	}
 	if err := tx.Commit(); err != nil {

@@ -26,7 +26,7 @@ wait:
 
 ## Tests
 test:
-	docker compose run --no-deps --rm server bash -c "cd /go/src && go test --race ./..."
+	docker compose run --no-deps --rm server bash -c "cd /go/src && go test -v --race ./..."
 	
 mock: # requires the installation of mockery on local system: "brew install mockery"
 	mockery --all
