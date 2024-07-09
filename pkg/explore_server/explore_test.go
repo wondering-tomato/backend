@@ -49,14 +49,12 @@ func TestHexEncodeDecode(t *testing.T) {
 	// Given.
 	hasMorePages := 7
 	intHasMorePages := strconv.Itoa(hasMorePages)
+	encodedIntHasMorePages := hex.EncodeToString([]byte(intHasMorePages))
 
 	// When.
-	encodedIntHasMorePages := hex.EncodeToString([]byte(intHasMorePages))
-	decodedIntHasMorePages, err := hex.DecodeString(encodedIntHasMorePages)
-	require.NoError(t, err)
+	decodedIntHasMorePages, err := decodeToken(encodedIntHasMorePages)
 
 	// Then.
-	decodedHasMorePages, err := strconv.Atoi(string(decodedIntHasMorePages))
 	require.NoError(t, err)
-	assert.Equal(t, hasMorePages, decodedHasMorePages)
+	assert.Equal(t, hasMorePages, decodedIntHasMorePages)
 }
