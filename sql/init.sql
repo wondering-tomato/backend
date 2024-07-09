@@ -53,8 +53,12 @@ CREATE TABLE decisions (
     RecipientID int NOT NULL,
     Liked int NOT NULL,
     PRIMARY KEY (ID),
-    FOREIGN KEY (ActorID) REFERENCES users(ID),
+    FOREIGN KEY (ActorID) REFERENCES users(ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     FOREIGN KEY (RecipientID) REFERENCES users(ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 
 INSERT INTO decisions ( ActorID, RecipientID, Liked )
