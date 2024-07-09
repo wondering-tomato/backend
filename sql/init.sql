@@ -1,5 +1,7 @@
 DROP DATABASE IF EXISTS explore;
 CREATE DATABASE explore;
+CREATE USER 'exploreuser'@'localhost' IDENTIFIED BY 'test';
+GRANT ALL ON explore.* TO 'exploreuser'@'localhost';
 USE explore;
 
 DROP TABLE IF EXISTS gender;

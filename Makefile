@@ -8,7 +8,7 @@ start-local:
 	docker compose up -d db
 
 stop:
-	docker-compose down --volumes
+	docker compose down --volumes
 
 exec:
 	docker exec -it db bash
@@ -26,7 +26,7 @@ wait:
 
 ## Tests
 test:
-	docker-compose run --no-deps --rm server bash -c "cd /go/src && go test --race ./..."
+	docker compose run --no-deps --rm server bash -c "cd /go/src && go test --race ./..."
 	
 mock: # requires the installation of mockery on local system: "brew install mockery"
 	mockery --all

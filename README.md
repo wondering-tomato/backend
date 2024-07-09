@@ -1,6 +1,3 @@
-
-
-
 ## To get started
 To run the API and MySQL DB.
 ```sh
@@ -41,10 +38,11 @@ If the connection to the mysql db fails, an empty inmemory noop DB will be used.
 
 ## Database Details
 ```sh
-USERNAME: root
+MYSQL_USER: exploreuser
+MYSQL_PASSWORD: test
 MYSQL_ROOT_PASSWORD: example
+MYSQL_HOST: "host.docker.internal"
 MYSQL_DATABASE: explore
-MYSQL_HOST: host.docker.internal
 HOSTNAME: db
 ```
 

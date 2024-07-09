@@ -18,6 +18,8 @@ services:
     restart: always
     hostname: db
     environment:
+      MYSQL_USER: exploreuser
+      MYSQL_PASSWORD: test
       MYSQL_ROOT_PASSWORD: example
       MYSQL_HOST: "host.docker.internal"
       MYSQL_DATABASE: explore
