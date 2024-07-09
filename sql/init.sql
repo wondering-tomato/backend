@@ -58,7 +58,8 @@ CREATE TABLE decisions (
         ON UPDATE CASCADE,
     FOREIGN KEY (RecipientID) REFERENCES users(ID)
         ON DELETE CASCADE
-        ON UPDATE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT UC_decisions UNIQUE (ActorID, RecipientID)
 );
 
 INSERT INTO decisions ( ActorID, RecipientID, Liked )
