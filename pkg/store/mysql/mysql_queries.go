@@ -57,13 +57,13 @@ func (s *StoreMySQLImpl) GetNewAllLiked(ctx context.Context, id int, lastId int)
 	var rows *sql.Rows
 	var err error
 	if lastId > 0 {
-		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 AND ActorID NOT IN (SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1) AND ID < ? ORDER BY ID desc LIMIT ?;", id, id, lastId, pageSize)
+		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 AND ActorID NOT IN (SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1) AND ID < ? ORDER BY ID desc LIMIT ?", id, id, lastId, pageSize)
 		if err != nil {
 			return nil, 0, err
 		}
 
 	} else {
-		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 AND ActorID NOT IN (SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1) ORDER BY ID desc LIMIT ?;", id, id, pageSize)
+		rows, err = s.db.QueryContext(ctx, "SELECT ID, ActorID FROM decisions WHERE RecipientID=? AND Liked=1 AND ActorID NOT IN (SELECT RecipientID FROM decisions WHERE ActorID=? AND Liked=1) ORDER BY ID desc LIMIT ?", id, id, pageSize)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -169,9 +169,6 @@ func (s *StoreMySQLImpl) PutDecision(ctx context.Context, actorId int, recipient
 	if rows != 1 {
 		return false, fmt.Errorf("row != 1: %d", rows)
 	}
-	if err := tx.Commit(); err != nil {
-		log.Fatal(err)
-	}
 
 	// Exit early if the actor's decision is not to like the recipient.
 	if liked == 0 {
@@ -186,6 +183,9 @@ func (s *StoreMySQLImpl) PutDecision(ctx context.Context, actorId int, recipient
 	bCount, err := countDecisions(tx, recipientId, actorId, 1)
 	if err != nil {
 		return false, err
+	}
+	if err := tx.Commit(); err != nil {
+		log.Fatal(err)
 	}
 	return aCount > 0 && bCount > 0, nil
 }
